@@ -1,0 +1,61 @@
+Notes and Help
+
+What do Web API handlers do?
+* If web API requires an auth token, the handler can validate the auth token
+    * Might put this logic in a handler base class so it can be shared by multiple
+      handlers
+* Deserialize JSON request body to Java request object
+* Call service class to perform the requested function, passing it the java request
+  object
+* Receive Java response object from the service
+* Serialize Java response object to JSON
+* Send HTTP response back to client with appropriate status code and response body
+
+What do Service classes do?
+* Unaware of details that deal with communication
+* Don't know what database we're using
+* Call DAO classes when they need to operate on the database
+
+// Code Example of service class
+
+Result doService(Request request) {
+
+    Database db = new Database();
+    try{
+        // Open database connection
+        db.openConnection();
+
+        // Use DAOs to do required operation
+        new someDAO(db.getConnection()).dbOperationA(request.x, request.y);
+        new someOtherDAO(db.getConnection()).dbOperationB(request.z);
+        // Pass in the database connection
+        // We want all database activity in this request to be done in one connection
+
+        db.closeConnection(true); // true means to commit the transaction, false would rollback
+
+        // Create and return SUCCESS result object
+        Result result = new Result(true, a, b, c);
+        return result;
+    } catch (Exception ex) {
+        ex.printStackTrace();
+
+        // Close database connection, ROLLBACK transaction
+        db.closeConnection(false);
+
+        // Create and return FAILURE Result object
+        Result result = new Result(false, "Error Message");
+        return result;
+    }
+}
+
+
+TIP - AVOID CODE DUPLICATION
+    Take common code and put in a base class
+    Base handler class
+        Deserialize and Serialize
+    Base service class
+    Base dao class
+    Request and Result classes
+        success boolean
+        message string
+
